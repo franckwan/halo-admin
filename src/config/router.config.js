@@ -172,12 +172,12 @@ export const asyncRouterMap = [
             component: () => import('@/views/system/OptionForm'),
             meta: { title: '博客设置', hiddenHeaderContent: false }
           },
-          // {
-          //   path: '/system/backup',
-          //   name: 'BackupList',
-          //   component: () => import('@/views/system/BackupList'),
-          //   meta: { title: '博客备份', hiddenHeaderContent: false }
-          // },
+          {
+            path: '/system/backup',
+            name: 'BackupList',
+            component: () => import('@/views/system/BackupList'),
+            meta: { title: '博客备份', hiddenHeaderContent: false }
+          },
           {
             path: '/system/tools',
             name: 'ToolList',
@@ -191,7 +191,26 @@ export const asyncRouterMap = [
             meta: { title: '关于', hiddenHeaderContent: false }
           }
         ]
+      },
+
+      // 数据统计
+      {
+        path: '/dataStatistics',
+        name: 'DataStatistics',
+        component: PageView,
+        redirect: '/dataStatistics/visitDetail',
+        meta: { title: '数据统计', icon: 'fund' },
+        children: [
+          {
+            path: '/dataStatistics/visitDetail',
+            name: 'VisitDetail',
+            component: () => import('@/views/dataStatistics/VisitDetail'),
+            meta: { title: '访客记录详情', hiddenHeaderContent: false }
+          }
+        ]
+
       }
+
     ]
   },
   {
