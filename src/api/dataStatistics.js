@@ -6,9 +6,17 @@ const dataStatisticsApi = {}
 
 dataStatisticsApi.queryList = params => {
   return service({
-    url: `${baseUrl}/queryList`,
+    url: `${baseUrl}`,
     params: params,
     method: 'get'
+  })
+}
+
+dataStatisticsApi.countByDate = params => {
+  return service({
+    url: `${baseUrl}/countByDate`,
+    params: params,
+    method: 'post'
   })
 }
 

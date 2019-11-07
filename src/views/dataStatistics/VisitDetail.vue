@@ -19,64 +19,23 @@
               </a-list>
 
               <!-- Desktop -->
-              <a-table :dataSource="data" :columns="columns">
-                <div
-                  slot="filterDropdown"
-                  slot-scope="{ setSelectedKeys, selectedKeys, confirm, clearFilters, column }"
-                  style="padding: 8px"
-                >
-                  <a-input
-                    v-ant-ref="c => searchInput = c"
-                    :placeholder="`Search ${column.dataIndex}`"
-                    :value="selectedKeys[0]"
-                    @change="e => setSelectedKeys(e.target.value ? [e.target.value] : [])"
-                    @pressEnter="() => handleSearch(selectedKeys, confirm)"
-                    style="width: 188px; margin-bottom: 8px; display: block;"
-                  />
-                  <a-button
-                    type="primary"
-                    @click="() => handleSearch(selectedKeys, confirm)"
-                    icon="search"
-                    size="small"
-                    style="width: 90px; margin-right: 8px"
-                  >Search</a-button
-                  >
-                  <a-button
-                    @click="() => handleReset(clearFilters)"
-                    size="small"
-                    style="width: 90px"
-                  >Reset</a-button
-                  >
-                </div>
-                <a-icon
-                  slot="filterIcon"
-                  slot-scope="filtered"
-                  type="search"
-                  :style="{ color: filtered ? '#108ee9' : undefined }"
-                />
-                <template slot="customRender" slot-scope="text">
-                  <span v-if="searchText">
-                    <template
-                      v-for="(fragment, i) in text.toString().split(new RegExp(`(?<=${searchText})|(?=${searchText})`, 'i'))"
-                    >
-                      <mark
-                        v-if="fragment.toLowerCase() === searchText.toLowerCase()"
-                        :key="i"
-                        class="highlight"
-                      >{{ fragment }}</mark
-                      >
-                      <template
-                        v-else
-                      >{{ fragment }}</template
-                      >
-                    </template>
-                  </span>
-                  <template
-                    v-else
-                  >{{ text }}</template
-                  >
-                </template>
+              <a-table
+                :dataSource="data"
+                :columns="columns"
+                :pagination="false"
+                style="word-break: break-all"
+              >
               </a-table>
+              <div class="page-wrapper">
+                <a-pagination
+                  class="pagination"
+                  :total="pagination.total"
+                  :pageSizeOptions="['1', '2', '5', '10', '20', '50', '100']"
+                  showSizeChanger
+                  @showSizeChange="handlePaginationChange"
+                  @change="handlePaginationChange"
+                />
+              </div>
             </a-tab-pane>
             <a-tab-pane key="custom">
               <span slot="tab">
@@ -89,18 +48,21 @@
                 itemLayout="vertical"
                 size="large"
                 :pagination="false"
-                :loading="sheetsLoading"
+                :loading="dataStatisticsLoading"
               >
               </a-list>
 
               <!-- Desktop -->
-              <a-table
-                v-else
-                :rowKey="sheet => sheet.id"
-                :pagination="false"
-                :loading="sheetsLoading"
-              >
-              </a-table>
+              <div>
+                <span>统计时间段: </span>
+                <a-select defaultValue="31" style="width: 120px" @change="handleChange">
+                  <a-select-option value="31">一个月</a-select-option>
+                  <a-select-option value="90">三个月</a-select-option>
+                  <a-select-option value="180">六个月</a-select-option>
+                  <a-select-option value="365">一年</a-select-option>
+                </a-select>
+                <ve-histogram :data="chartData" :extend="extend"></ve-histogram>
+              </div>
             </a-tab-pane>
           </a-tabs>
         </div>
@@ -114,133 +76,105 @@
 import { mixin, mixinDevice } from '@/utils/mixin.js'
 import moment from 'moment'
 import dataStatisticsApi from '@/api/dataStatistics'
+import VCharts from 'v-charts'
+
 const data = []
 
 const columns = [
   {
     title: 'IP',
-    dataIndex: 'ip',
-    key: 'ip',
-    scopedSlots: {
-      filterDropdown: 'filterDropdown',
-      filterIcon: 'filterIcon',
-      customRender: 'customRender'
-    },
-    onFilter: (value, record) => record.name.toString().toLowerCase().includes(value.toLowerCase()),
-    onFilterDropdownVisibleChange: visible => {
-      if (visible) {
-        setTimeout(() => {
-          this.searchInput.focus()
-        }, 0)
-      }
-    }
+    dataIndex: 'ip'
   },
   {
     title: '时间',
     dataIndex: 'createTime',
-    key: 'createTime',
     customRender: (value, row, index) => {
       return moment(new Date(value)).format('YYYY-MM-DD HH:mm:ss')
     },
     scopedSlots: {
-      filterDropdown: 'filterDropdown',
-      filterIcon: 'filterIcon',
       customRender: 'customRender'
-    },
-    onFilter: (value, record) => record.age.toString().toLowerCase().includes(value.toLowerCase()),
-    onFilterDropdownVisibleChange: visible => {
-      if (visible) {
-        setTimeout(() => {
-          this.searchInput.focus()
-        })
-      }
     }
+  },
+  {
+    title: '路径',
+    dataIndex: 'path',
+    width: '500px'
   },
   {
     title: '国家',
-    dataIndex: 'country',
-    key: 'country',
-    scopedSlots: {
-      filterDropdown: 'filterDropdown',
-      filterIcon: 'filterIcon',
-      customRender: 'customRender'
-    },
-    onFilter: (value, record) => record.address.toString().toLowerCase().includes(value.toLowerCase()),
-    onFilterDropdownVisibleChange: visible => {
-      if (visible) {
-        setTimeout(() => {
-          this.searchInput.focus()
-        })
-      }
-    }
+    dataIndex: 'country'
   },
   {
     title: '市',
-    dataIndex: 'city',
-    key: 'city',
-    scopedSlots: {
-      filterDropdown: 'filterDropdown',
-      filterIcon: 'filterIcon',
-      customRender: 'customRender'
-    },
-    onFilter: (value, record) => record.address.toString().toLowerCase().includes(value.toLowerCase()),
-    onFilterDropdownVisibleChange: visible => {
-      if (visible) {
-        setTimeout(() => {
-          this.searchInput.focus()
-        })
-      }
-    }
+    dataIndex: 'city'
   },
   {
     title: 'ISP',
-    dataIndex: 'isp',
-    key: 'isp',
-    scopedSlots: {
-      filterDropdown: 'filterDropdown',
-      filterIcon: 'filterIcon',
-      customRender: 'customRender'
-    },
-    onFilter: (value, record) => record.address.toString().toLowerCase().includes(value.toLowerCase()),
-    onFilterDropdownVisibleChange: visible => {
-      if (visible) {
-        setTimeout(() => {
-          this.searchInput.focus()
-        })
-      }
-    }
+    dataIndex: 'isp'
   }
 ]
 export default {
+  components: {
+    've-histogram': VCharts.VeHistogram
+  },
   mixins: [mixin, mixinDevice],
   data() {
+    this.extend = {
+      series: {
+        label: { show: true, position: 'top' }
+      }
+    }
     return {
+      pagination: {
+        current: 1,
+        pageSize: 10,
+        sort: null
+      },
+      queryParam: {
+        page: 0,
+        size: 10,
+        sort: null,
+        ip: null
+      },
       data,
-      searchText: '',
-      searchInput: null,
-      columns
+      columns,
+      dayCount: 31, // 默认是一个月
+      chartData: {
+        columns: ['date', 'count'],
+        rows: []
+      }
     }
   },
   created() {
-    this.loadSheets()
+    this.loadDataStatistics()
+    this.loadChart()
   },
   methods: {
-    loadSheets() {
-      this.sheetsLoading = true
-      dataStatisticsApi.queryList().then(response => {
-        this.data = response.data.data
-        this.sheetsLoading = false
+    loadDataStatistics() {
+      this.dataStatisticsLoading = true
+      this.queryParam.page = this.pagination.current - 1
+      this.queryParam.size = this.pagination.pageSize
+      this.queryParam.sort = this.pagination.sort
+      dataStatisticsApi.queryList(this.queryParam).then(response => {
+        this.data = response.data.data.content
+        this.pagination.total = response.data.data.total
+        this.dataStatisticsLoading = false
       })
     },
-    onSheetSettingsClose() {
-      this.sheetSettingVisible = false
-      this.selectedSheet = {}
-      setTimeout(() => {
-        this.loadSheets()
-      }, 500)
+    handlePaginationChange(page, pageSize) {
+      this.$log.debug(`Current: ${page}, PageSize: ${pageSize}`)
+      this.pagination.current = page
+      this.pagination.pageSize = pageSize
+      this.loadDataStatistics()
     },
-    onRefreshSheetFromSetting(sheet) {
-      this.selectedSheet = sheet
+    loadChart() {
+      dataStatisticsApi.countByDate({ dayCount: this.dayCount }).then(response => {
+        this.chartData.rows = response.data.data
+      })
+    },
+    handleChange(value, option) {
+      this.dayCount = value
+      this.loadChart()
     }
   }
 }
